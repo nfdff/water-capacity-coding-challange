@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styles from './ArrayVisualization.module.scss';
 
 interface ArrayVisualizationProps {
@@ -8,8 +8,34 @@ interface ArrayVisualizationProps {
 
 const ArrayVisualization: React.FC<ArrayVisualizationProps> = ({ arr, showWater }) => {
   const [waterLevels, setWaterLevels] = useState<number[]>([]);
+  const [unitSize, setUnitSize] = useState(40);
+  const containerRef = useRef<HTMLDivElement>(null);
   const maxHeight = 7;
-  const unitSize = 40; // pixels per unit
+
+  useEffect(() => {
+    const calculateUnitSize = () => {
+      if (arr.length > 0) {
+        // Calculate based on viewport width since max-width is calc(100vw - 24px)
+        const viewportWidth = window.innerWidth;
+        const maxContainerWidth = Math.min(viewportWidth - 24, viewportWidth);
+
+        const padding = 40; // Account for container padding (12px * 2 + 8px * 2)
+        const availableWidth = maxContainerWidth - padding;
+        const calculatedSize = Math.floor(availableWidth / arr.length);
+
+        console.log({ viewportWidth, maxContainerWidth, availableWidth, calculatedSize, arrLength: arr.length });
+
+        // Set min size to 20px for readability, max size to 40px
+        const size = Math.max(20, Math.min(calculatedSize, 40));
+        setUnitSize(size);
+      }
+    };
+
+    // Use setTimeout to ensure DOM is ready
+    setTimeout(calculateUnitSize, 0);
+    window.addEventListener('resize', calculateUnitSize);
+    return () => window.removeEventListener('resize', calculateUnitSize);
+  }, [arr.length]);
 
   useEffect(() => {
     if (showWater) {
@@ -40,7 +66,7 @@ const ArrayVisualization: React.FC<ArrayVisualizationProps> = ({ arr, showWater 
   }, [arr, showWater]);
 
   return (
-    <div className={styles.visualizationContainer}>
+    <div className={styles.visualizationContainer} ref={containerRef}>
       <div className={styles.columnsContainer} style={{ height: `${(maxHeight + 2) * unitSize}px` }}>
         {arr.map((height, index) => (
           <div key={index} className={styles.columnWrapper} style={{ width: `${unitSize}px` }}>
